@@ -1,7 +1,7 @@
 /*
  * attr.h -- Functions for handling tnef attributes
  *
- * Copyright (C)1999-2006 Mark Simpson <damned@theworld.com>
+ * Copyright (C)1999-2018 Mark Simpson <damned@theworld.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,6 +69,6 @@ typedef struct
 extern void attr_dump (Attr* attr);
 extern void attr_free (Attr* attr);
 extern void copy_date_from_attr (Attr* attr, struct date* dt);
-extern Attr* attr_read ();
+extern Attr* attr_read (FILE* in);
 
 #endif /* ATTR_H */

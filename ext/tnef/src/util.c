@@ -1,7 +1,7 @@
 /*
  * util.c -- Utility functions
  *
- * Copyright (C)1999-2006 Mark Simpson <damned@theworld.com>
+ * Copyright (C)1999-2018 Mark Simpson <damned@theworld.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,8 @@
 /* Needed to transform char buffers into little endian numbers */
 uint32 GETINT32(unsigned char *p)
 {
-    return (uint32)((uint8)(p)[0]           \
-		    +((uint8)(p)[1]<<8)     \
-		    +((uint8)(p)[2]<<16)    \
-		    +((uint8)(p)[3]<<24));
+  uint8* q=(uint8*)p;
+  return q[0] + (q[1]<<8) + (q[2]<<16)+ (((uint32)q[3])<<24);
 }
 
 uint16 GETINT16 (unsigned char* p)
@@ -52,8 +50,8 @@ getbuf (FILE *fp, unsigned char buf[], size_t n)
 {
     if (fread (buf, 1, n, fp) != n)
     {
-	perror ("Unexpected end of input");
-	exit (1);
+        perror ("Unexpected end of input");
+        exit (1);
     }
     return buf;
 }
@@ -85,28 +83,29 @@ unicode_to_utf8 (size_t len, unsigned char* buf)
     int j = 0;
     unsigned char *utf8 = malloc (3 * len/2 + 1); /* won't get any longer than this */
 
-    for (i = 0; i < len - 1; i += 2)
-    {
-	uint32 c = GETINT16(buf + i);
-	if (c <= 0x007f)
-	{
-	    utf8[j++] = 0x00 | ((c & 0x007f) >> 0);
-	}
-	else if (c < 0x07ff)
-	{
-	    utf8[j++] = 0xc0 | ((c & 0x07c0) >> 6);
-	    utf8[j++] = 0x80 | ((c & 0x003f) >> 0);
-	}
-	else
-	{
-	    utf8[j++] = 0xe0 | ((c & 0xf000) >> 12);
-	    utf8[j++] = 0x80 | ((c & 0x0fc0) >> 6);
-	    utf8[j++] = 0x80 | ((c & 0x003f) >> 0);
-	}
+    if (len > 0) {
+        for (i = 0; i < len - 1; i += 2)
+        {
+            uint32 c = GETINT16(buf + i);
+            if (c <= 0x007f)
+            {
+                utf8[j++] = 0x00 | ((c & 0x007f) >> 0);
+            }
+            else if (c < 0x07ff)
+            {
+                utf8[j++] = 0xc0 | ((c & 0x07c0) >> 6);
+                utf8[j++] = 0x80 | ((c & 0x003f) >> 0);
+            }
+            else
+            {
+                utf8[j++] = 0xe0 | ((c & 0xf000) >> 12);
+                utf8[j++] = 0x80 | ((c & 0x0fc0) >> 6);
+                utf8[j++] = 0x80 | ((c & 0x003f) >> 0);
+            }
+        }
     }
-    
+
     utf8[j] = '\0';
-    
+
     return utf8;
 }
-

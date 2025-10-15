@@ -1,7 +1,7 @@
 /*
  * alloc.c -- Useful allocation function/defintions
  *
- * Copyright (C)1999-2006 Mark Simpson <damned@world.std.com>
+ * Copyright (C)1999-2018 Mark Simpson <damned@world.std.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,14 +40,27 @@ get_alloc_limit()
     return alloc_limit;
 }
 
+#ifdef HAVE_BUILTIN_OVERFLOW
+# define check_mul_overflow __builtin_mul_overflow
+#else
+size_t
+check_mul_overflow(size_t a, size_t b, size_t* res)
+{
+    size_t tmp = a * b;
+    if (a != 0 && tmp / a != b) return 1;
+    *res = tmp;
+    return 0;
+}
+#endif
+
 static void
 alloc_limit_failure (char *fn_name, size_t size)
 {
-    fprintf (stderr, 
+    fprintf (stderr,
              "%s: Maximum allocation size exceeded "
              "(maxsize = %lu; size = %lu).\n",
              fn_name,
-             (unsigned long)alloc_limit, 
+             (unsigned long)alloc_limit,
              (unsigned long)size);
 }
 
@@ -56,17 +69,22 @@ alloc_limit_assert (char *fn_name, size_t size)
 {
     if (alloc_limit && size > alloc_limit)
     {
-	alloc_limit_failure (fn_name, size);
-	exit (-1);
+        alloc_limit_failure (fn_name, size);
+        exit (-1);
     }
 }
 
 /* attempts to malloc memory, if fails print error and call abort */
 void*
-xmalloc (size_t size)
+xmalloc (size_t num, size_t size, size_t extra)
 {
-    void *ptr = malloc (size);
-    if (!ptr 
+    size_t res;
+    if (check_mul_overflow(num, size, &res))
+        abort();
+    if (res + extra < res)
+        abort();
+    void *ptr = malloc (res + extra);
+    if (!ptr
         && (size != 0))         /* some libc don't like size == 0 */
     {
         perror ("xmalloc: Memory allocation failure");
@@ -77,31 +95,44 @@ xmalloc (size_t size)
 
 /* Allocates memory but only up to a limit */
 void*
-checked_xmalloc (size_t size)
+checked_xmalloc (size_t num, size_t size, size_t extra)
 {
-    alloc_limit_assert ("checked_xmalloc", size);
-    return xmalloc (size);
+    size_t res;
+    if (check_mul_overflow(num, size, &res))
+        abort();
+    if (res + extra < res)
+        abort();
+    alloc_limit_assert ("checked_xmalloc", res);
+    return xmalloc (num, size, extra);
 }
 
 /* xmallocs memory and clears it out */
 void*
-xcalloc (size_t num, size_t size)
+xcalloc (size_t num, size_t size, size_t extra)
 {
-    void *ptr = malloc(num * size);
+    size_t res;
+    if (check_mul_overflow(num, size, &res))
+        abort();
+
+    void *ptr;
+    if (res + extra < res)
+        abort();
+    ptr = malloc(res + extra);
     if (ptr)
     {
-        memset (ptr, '\0', (num * size));
+        memset (ptr, '\0', (res + extra));
     }
     return ptr;
 }
 
 /* xcallocs memory but only up to a limit */
 void*
-checked_xcalloc (size_t num, size_t size)
+checked_xcalloc (size_t num, size_t size, size_t extra)
 {
-    alloc_limit_assert ("checked_xcalloc", (num *size));
-    return xcalloc (num, size);
+    size_t res;
+    if (check_mul_overflow(num, size, &res))
+        abort();
+
+    alloc_limit_assert ("checked_xcalloc", (res));
+    return xcalloc (num, size, extra);
 }
-
-
-

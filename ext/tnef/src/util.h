@@ -1,7 +1,7 @@
 /*
  * util.h -- Utility functions
  *
- * Copyright (C)1999-2006 Mark Simpson <damned@theworld.com>
+ * Copyright (C)1999-2018 Mark Simpson <damned@theworld.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,10 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "common.h"
+
+#define CHECKINT32(a, b) { if(a+4 > b){ exit(-1); } }
+#define CHECKINT16(a, b) { if(a+2 > b){ exit(-1); } }
+#define CHECKINT8(a, b) { if(a+1 > b){ exit(-1); } }
 
 extern uint32 GETINT32(unsigned char*p);
 extern uint16 GETINT16(unsigned char*p);
